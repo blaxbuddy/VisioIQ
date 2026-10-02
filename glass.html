@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AetherRetail | Smart Inventory Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+    ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 20px; }
+    
+    /* =========================================
+       BACKGROUND & CLEAN GLASS PANELS
+       ========================================= */
+    body {
+      background: url('ankur-verma-vXU_wJ7YmNc-unsplash.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 1.5rem; 
+      /* Simplified, soft drop shadow */
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-inner {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 1.25rem;
+      /* Simplified, soft inner shadow */
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .realogram-box { position: relative; border-radius: 1.25rem; }
+    .realogram-box::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      border: 2px dashed rgba(59, 130, 246, 0.6); 
+      border-radius: 1.35rem;
+      pointer-events: none;
+    }
+
+    /* =========================================
+       3D ACTION BUTTONS (Blue Theme)
+       ========================================= */
+    .btn-3d {
+      position: relative;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 1.5rem; 
+      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      backdrop-filter: blur(5px);
+    }
+    
+    .btn-3d-primary {
+      background: linear-gradient(180deg, #7dd3fc 0%, #3b82f6 100%);
+      border: 1px solid #2563eb;
+      box-shadow: 0 6px 0 #1d4ed8, 0 12px 15px rgba(59,130,246,0.2), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+    .btn-3d-primary:active {
+      box-shadow: 0 0px 0 #1d4ed8, 0 2px 5px rgba(59,130,246,0.3), inset 0 1px 1px rgba(255,255,255,0.2);
+      transform: translateY(6px);
+    }
+
+    .btn-3d-success {
+      background: linear-gradient(180deg, #67e8f9 0%, #06b6d4 100%);
+      border: 1px solid #0891b2;
+      box-shadow: 0 6px 0 #0e7490, 0 12px 15px rgba(6,182,212,0.2), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+    .btn-3d-success:active {
+      box-shadow: 0 0px 0 #0e7490, 0 2px 5px rgba(6,182,212,0.3), inset 0 1px 1px rgba(255,255,255,0.2);
+      transform: translateY(6px);
+    }
+
+    .btn-3d-danger {
+      background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+      border: 1px solid #be123c;
+      box-shadow: 0 4px 0 #881337, 0 8px 10px rgba(225,29,72,0.2), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+    .btn-3d-danger:active {
+      box-shadow: 0 0px 0 #881337, 0 2px 5px rgba(225,29,72,0.3), inset 0 1px 1px rgba(255,255,255,0.2);
+      transform: translateY(4px);
+    }
+
+    /* =========================================
+       SLEEK NAVIGATION TABS (Inside Glass Bar)
+       ========================================= */
+    .btn-nav {
+      transition: all 0.3s ease;
+      color: #475569; 
+      border-radius: 2rem;
+      padding: 0.6rem 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+    .btn-nav:hover {
+      background: rgba(255, 255, 255, 0.4);
+      color: #1e40af;
+    }
+    .btn-nav.active-tab {
+      background: rgba(255, 255, 255, 0.9); 
+      color: #1d4ed8; 
+      border-color: rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative overflow-x-hidden">
+
+  <!-- Top Status Bar -->
+  <header class="glass-panel mx-6 mt-6 px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-6 z-50">
+    <div class="flex items-center space-x-4">
+      <div class="h-12 w-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/30">
+        AI
+      </div>
+      <h1 class="text-xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+        Smart Retail Analytics
+        <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-100/80 text-blue-700 border border-blue-200 shadow-sm backdrop-blur-md">Store #104 (Indore)</span>
+      </h1>
+    </div>
+
+    <div class="flex items-center gap-6 text-sm font-semibold text-slate-600 glass-inner px-6 py-3 rounded-full">
+      <div class="flex items-center gap-2">
+        <span class="h-3 w-3 rounded-full bg-cyan-400 animate-pulse shadow-sm"></span>
+        <span>AI Engine Load: <strong class="text-slate-800" id="ai-load">42%</strong></span>
+      </div>
+      <div class="hidden sm:flex items-center gap-2 border-l border-slate-300/50 pl-4">
+        <span>Processing Delay: <strong class="text-slate-800">18 ms</strong></span>
+      </div>
+      <div class="flex items-center gap-2 border-l border-slate-300/50 pl-4">
+        <span class="px-3 py-1.5 rounded-full bg-white/60 text-cyan-700 text-xs font-black uppercase tracking-wider border border-white shadow-sm">Privacy Active</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Bar Container -->
+  <div class="w-full px-6 mt-6 flex justify-center z-10 sticky top-[104px]">
+    <nav class="glass-panel rounded-full px-2 py-2 flex space-x-2 overflow-x-auto shadow-sm border border-white/60">
+      <button onclick="switchTab('shelf', this)" id="tab-shelf" class="btn-nav active-tab text-sm">
+        1. Realogram
+      </button>
+      <button onclick="switchTab('velocity', this)" id="tab-velocity" class="btn-nav text-sm">
+        2. Depletion
+      </button>
+      <button onclick="switchTab('seasonal', this)" id="tab-seasonal" class="btn-nav text-sm">
+        3. Forecasting
+      </button>
+      <button onclick="switchTab('spatial', this)" id="tab-spatial" class="btn-nav text-sm">
+        4. Traffic Heatmaps
+      </button>
+      <button onclick="switchTab('fleet', this)" id="tab-fleet" class="btn-nav text-sm">
+        5. System Health
+      </button>
+    </nav>
+  </div>
+
+  <!-- Main Content Areas -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-8 z-10 mt-2">
+
+    <!-- TAB 1: REALOGRAM & SHELF INTELLIGENCE -->
+    <section id="view-shelf" class="space-y-8">
+      <!-- Top Metric Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="glass-panel p-6 text-center">
+          <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Planogram Match</p>
+          <div class="text-4xl font-black text-slate-800 mt-3 mb-2" id="compliance-stat">88.5%</div>
+          <span class="text-xs font-bold text-cyan-800 bg-cyan-100/80 px-3 py-1.5 rounded-full border border-cyan-200">+3.2% vs target</span>
+        </div>
+        <div class="glass-panel p-6 text-center">
+          <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Empty Slots</p>
+          <div class="text-4xl font-black text-rose-500 mt-3 mb-2" id="empty-stat">3</div>
+          <span class="text-xs font-bold text-rose-700 bg-rose-100/80 px-3 py-1.5 rounded-full border border-rose-200">Requires attention</span>
+        </div>
+        <div class="glass-panel p-6 text-center">
+          <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Misplaced Items</p>
+          <div class="text-4xl font-black text-yellow-600 mt-3 mb-2">1</div>
+          <span class="text-xs font-bold text-yellow-800 bg-yellow-100/80 px-3 py-1.5 rounded-full border border-yellow-200">Customer displaced</span>
+        </div>
+        <div class="glass-panel p-6 text-center">
+          <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Restock Time</p>
+          <div class="text-4xl font-black text-slate-800 mt-3 mb-2">14m</div>
+          <span class="text-xs font-bold text-blue-800 bg-blue-100/80 px-3 py-1.5 rounded-full border border-blue-200">58% faster</span>
+        </div>
+      </div>
+
+      <!-- Realogram Shelf Visualizer -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 glass-panel p-8 space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-black text-slate-800 flex items-center gap-3">
+              <span class="h-3 w-3 bg-blue-500 rounded-full animate-pulse shadow-sm shadow-blue-400/50"></span>
+              Live Realogram vs. Planogram Map
+            </h2>
+            <button onclick="runSmartAudit()" class="btn-3d btn-3d-primary px-6 py-3 text-sm">
+              Trigger Realogram Audit
+            </button>
+          </div>
+
+          <!-- Shelf Tiers (Realogram Map) -->
+          <div class="space-y-5 glass-inner p-6 relative">
+            <div class="absolute inset-0 opacity-10 pointer-events-none rounded-[1.25rem]" style="background-image: linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <!-- Tier 1 -->
+            <div class="relative z-10">
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">
+                <span>Top Shelf (Premium)</span>
+                <span class="text-cyan-700">100% Planogram Match</span>
+              </div>
+              <div class="grid grid-cols-4 gap-4">
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Parle-G 800g</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (6/6)</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Britannia Marie</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (5/5)</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Dark Fantasy</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (4/4)</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Oreo Original</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (4/4)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tier 2 -->
+            <div class="relative z-10">
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-2 mt-5 uppercase tracking-wider">
+                <span>Middle Shelf</span>
+                <span class="text-yellow-700">Deviation Detected</span>
+              </div>
+              <div class="grid grid-cols-4 gap-4">
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Maggi 2-Min</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (8/8)</p>
+                </div>
+                <div class="realogram-box glass-panel bg-yellow-50/50 border-b-4 border-yellow-400 p-4 text-center shadow-sm relative">
+                  <p class="text-sm font-bold text-slate-800">Yippee Noodles</p>
+                  <p class="text-[11px] text-yellow-700 font-bold mt-1 uppercase">Found: Maggi Oats</p>
+                </div>
+                <div class="realogram-box glass-panel bg-rose-50/50 border-b-4 border-rose-400 p-4 text-center shadow-sm relative" id="slot-top-empty">
+                  <p class="text-sm font-bold text-slate-800">Knorr Soup</p>
+                  <p class="text-xs text-rose-600 font-black mt-1 uppercase animate-pulse">Empty</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Ching's Hakka</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (3/3)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tier 3 -->
+            <div class="relative z-10">
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-2 mt-5 uppercase tracking-wider">
+                <span>Bottom Shelf (Bulk)</span>
+                <span class="text-rose-600">Critical Gaps</span>
+              </div>
+              <div class="grid grid-cols-4 gap-4">
+                <div class="realogram-box glass-panel bg-rose-50/50 border-b-4 border-rose-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Aashirvaad Atta</p>
+                  <p class="text-xs text-rose-600 font-black mt-1 uppercase animate-pulse">Empty</p>
+                </div>
+                <div class="realogram-box glass-panel bg-rose-50/50 border-b-4 border-rose-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Fortune Oil</p>
+                  <p class="text-xs text-rose-600 font-black mt-1 uppercase animate-pulse">Empty</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Tata Salt</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (12/12)</p>
+                </div>
+                <div class="realogram-box glass-panel border-b-4 border-cyan-400 p-4 text-center shadow-sm">
+                  <p class="text-sm font-bold text-slate-800">Madhur Sugar</p>
+                  <p class="text-xs text-cyan-700 font-semibold mt-1">Full (4/4)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staff Task Alerts -->
+        <div class="glass-panel p-8 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-black text-slate-800">Staff Task List</h3>
+              <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-rose-100/80 text-rose-700 uppercase tracking-wider border border-rose-200">High Priority</span>
+            </div>
+            <div class="space-y-5" id="alerts-list">
+              <!-- Task 1 -->
+              <div class="p-5 rounded-[1.25rem] glass-inner border-l-4 border-rose-400" id="alert-1">
+                <div class="flex justify-between items-start mb-4">
+                  <span class="text-[15px] font-bold text-slate-800">Restock: Aashirvaad Atta</span>
+                  <span class="text-xs font-bold text-slate-500">3m ago</span>
+                </div>
+                <button onclick="resolveAlert('alert-1', 'Aashirvaad Atta')" class="btn-3d btn-3d-success w-full py-3 text-sm">
+                  Mark as Restocked
+                </button>
+              </div>
+
+              <!-- Task 2 -->
+              <div class="p-5 rounded-[1.25rem] glass-inner border-l-4 border-yellow-400" id="alert-3">
+                <div class="flex justify-between items-start mb-4">
+                  <span class="text-[15px] font-bold text-slate-800">Fix: Maggi Oats</span>
+                  <span class="text-xs font-bold text-slate-500">12m ago</span>
+                </div>
+                <button onclick="resolveAlert('alert-3', 'Yippee Slot')" class="btn-3d btn-3d-primary w-full py-3 text-sm">
+                  Mark as Fixed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DEPLETION -->
+    <section id="view-velocity" class="hidden space-y-8">
+      <div class="glass-panel p-8">
+        <div class="flex flex-wrap items-center justify-between mb-8 gap-3">
+          <h2 class="text-xl font-black text-slate-800">Visual Sales vs. Register Scans</h2>
+          <div class="text-sm font-bold text-slate-600 flex items-center gap-5 glass-inner px-5 py-2.5 rounded-full">
+            <span class="flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-sm"></span> Camera Detection</span>
+            <span class="flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-full bg-cyan-400 shadow-sm"></span> Checkout Scans</span>
+          </div>
+        </div>
+        <div class="h-80 w-full relative z-10">
+          <canvas id="depletionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Automated Orders -->
+      <div class="glass-panel p-8">
+        <div class="flex items-center justify-between mb-8">
+          <h3 class="text-xl font-black text-slate-800">Smart Supplier Ordering</h3>
+          <button onclick="alert('Orders successfully sent to suppliers!')" class="btn-3d btn-3d-success px-6 py-3 text-sm">
+            Send Supplier Orders
+          </button>
+        </div>
+
+        <div class="glass-inner rounded-3xl overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-white/40 text-slate-600 uppercase font-bold tracking-wider text-xs border-b border-slate-300/50">
+              <tr>
+                <th class="py-5 px-6">Product</th>
+                <th class="py-5 px-6">Sales Speed</th>
+                <th class="py-5 px-6">Current Stock</th>
+                <th class="py-5 px-6">Supplier Delay</th>
+                <th class="py-5 px-6">Order Amount</th>
+                <th class="py-5 px-6">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-300/40 text-slate-700 font-medium bg-transparent">
+              <tr class="hover:bg-white/30 transition">
+                <td class="py-4 px-6 font-bold text-slate-900">Aashirvaad Atta</td>
+                <td class="py-4 px-6 text-orange-600">Fast (4.2/hr)</td>
+                <td class="py-4 px-6 font-bold text-rose-600">18 left</td>
+                <td class="py-4 px-6">2 Days</td>
+                <td class="py-4 px-6 font-black text-blue-700 text-lg">80 units</td>
+                <td class="py-4 px-6">
+                   <button class="btn-3d btn-3d-danger px-4 py-2 text-xs">Order Now</button>
+                </td>
+              </tr>
+              <tr class="hover:bg-white/30 transition">
+                <td class="py-4 px-6 font-bold text-slate-900">Fortune Oil</td>
+                <td class="py-4 px-6 text-orange-600">Fast (3.8/hr)</td>
+                <td class="py-4 px-6 font-bold text-rose-600">24 left</td>
+                <td class="py-4 px-6">1 Day</td>
+                <td class="py-4 px-6 font-black text-blue-700 text-lg">60 units</td>
+                <td class="py-4 px-6">
+                   <button class="btn-3d btn-3d-danger px-4 py-2 text-xs">Order Now</button>
+                </td>
+              </tr>
+              <tr class="hover:bg-white/30 transition">
+                <td class="py-4 px-6 font-bold text-slate-900">Tata Salt</td>
+                <td class="py-4 px-6 text-slate-600">Normal (1.1/hr)</td>
+                <td class="py-4 px-6 text-cyan-700">84 left</td>
+                <td class="py-4 px-6">2 Days</td>
+                <td class="py-4 px-6 font-black text-slate-500 text-lg">0 units</td>
+                <td class="py-4 px-6"><span class="px-3 py-1.5 rounded-full bg-cyan-100/80 text-cyan-800 font-bold text-xs uppercase border border-cyan-200">Healthy</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: FORECASTING -->
+    <section id="view-seasonal" class="hidden space-y-8">
+      <div class="glass-panel p-8 space-y-8">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300/50 pb-6">
+          <h2 class="text-xl font-black text-slate-800">Festival Demand Prediction</h2>
+          <div class="flex items-center gap-2 glass-inner p-1.5 rounded-full">
+            <button onclick="setFestival('regular')" id="btn-reg" class="btn-nav active-tab text-xs py-2.5 px-4 border-none">Regular Week</button>
+            <button onclick="setFestival('diwali')" id="btn-diwali" class="btn-nav text-xs py-2.5 px-4 border-none">Diwali Rush (3.2x)</button>
+          </div>
+        </div>
+
+        <div class="h-80 w-full relative z-10">
+          <canvas id="forecastChart"></canvas>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          <div class="glass-inner p-6 rounded-3xl border-l-4 border-blue-500">
+            <p class="text-sm text-blue-700 font-black uppercase tracking-wider">Cooking Oils</p>
+            <p class="text-3xl font-black text-slate-800 mt-2">+240% Surge</p>
+          </div>
+          <div class="glass-inner p-6 rounded-3xl border-l-4 border-cyan-500">
+            <p class="text-sm text-cyan-700 font-black uppercase tracking-wider">Gift Packs</p>
+            <p class="text-3xl font-black text-slate-800 mt-2">+380% Surge</p>
+          </div>
+          <div class="glass-inner p-6 rounded-3xl border-l-4 border-teal-500">
+            <p class="text-sm text-teal-700 font-black uppercase tracking-wider">Restock Speed</p>
+            <p class="text-3xl font-black text-slate-800 mt-2">Every 45m</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: TRAFFIC HEATMAPS -->
+    <section id="view-spatial" class="hidden space-y-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-2 glass-panel p-8 flex flex-col">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-black text-slate-800">Live Store Traffic Heatmap</h2>
+            <span class="btn-nav active-tab pointer-events-none text-xs py-2 px-4">
+              Tracking Active
+            </span>
+          </div>
+          
+          <div class="flex-1 rounded-[1.5rem] overflow-hidden border border-white shadow-inner bg-white/50 flex items-center justify-center p-2">
+            <img src="WhatsApp Image 2026-09-29 at 5.47.33 PM.jpeg" alt="Store Floorplan Heatmap" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity duration-300 mix-blend-multiply rounded-2xl">
+          </div>
+        </div>
+
+        <!-- Monetization Rules -->
+        <div class="glass-panel p-8 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 mb-8">Shelf Placement Value</h3>
+            <div class="space-y-5">
+              <div class="glass-inner p-5 rounded-3xl border-l-4 border-cyan-400">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-slate-800">Brand Sponsorship</span>
+                  <span class="text-cyan-700 font-black text-lg">₹18,000 / mo</span>
+                </div>
+              </div>
+
+              <div class="glass-inner p-5 rounded-3xl border-l-4 border-yellow-400">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-slate-800">Clear Dead Stock</span>
+                  <span class="text-yellow-700 font-black text-lg">Suggestion</span>
+                </div>
+              </div>
+
+              <div class="glass-inner p-5 rounded-3xl border-l-4 border-rose-400">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-slate-800">Checkout Queue</span>
+                  <span class="text-rose-600 font-black text-lg">Warning</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SYSTEM HEALTH -->
+    <section id="view-fleet" class="hidden space-y-8">
+      <div class="glass-panel p-8">
+        <h2 class="text-xl font-black text-slate-800 mb-8">Store Operations Hub Diagnostics</h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="glass-inner p-6 rounded-3xl text-center">
+            <span class="text-xs text-blue-700 font-bold uppercase tracking-wider">Device Temp</span>
+            <p class="text-3xl font-black text-slate-800 mt-3 mb-2">48°C</p>
+            <span class="text-xs font-bold text-cyan-700">Cooling Active</span>
+          </div>
+          <div class="glass-inner p-6 rounded-3xl text-center">
+            <span class="text-xs text-blue-700 font-bold uppercase tracking-wider">AI Vision Engine</span>
+            <p class="text-3xl font-black text-blue-700 mt-3 mb-2">Normal</p>
+            <span class="text-xs font-bold text-slate-600">42% Load</span>
+          </div>
+          <div class="glass-inner p-6 rounded-3xl text-center">
+            <span class="text-xs text-cyan-700 font-bold uppercase tracking-wider">Local Storage</span>
+            <p class="text-3xl font-black text-slate-800 mt-3 mb-2">218 GB</p>
+            <span class="text-xs font-bold text-cyan-700">Plenty of space</span>
+          </div>
+          <div class="glass-inner p-6 rounded-3xl text-center">
+            <span class="text-xs text-orange-600 font-bold uppercase tracking-wider">Cloud Connection</span>
+            <p class="text-3xl font-black text-blue-700 mt-3 mb-2">Secure</p>
+            <span class="text-xs font-bold text-slate-600">Instantly syncing</span>
+          </div>
+        </div>
+
+        <div class="mt-10 border-t border-slate-300/50 pt-8">
+          <h4 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-5">Active Store Cameras</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="glass-inner p-5 rounded-2xl flex justify-between items-center">
+              <span class="font-bold text-slate-800 block">Camera 1 (Shelves)</span>
+              <span class="h-3.5 w-3.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></span>
+            </div>
+            <div class="glass-inner p-5 rounded-2xl flex justify-between items-center">
+              <span class="font-bold text-slate-800 block">Camera 2 (Aisles)</span>
+              <span class="h-3.5 w-3.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></span>
+            </div>
+            <div class="glass-inner p-5 rounded-2xl flex justify-between items-center">
+              <span class="font-bold text-slate-800 block">Camera 3 (Checkout)</span>
+              <span class="h-3.5 w-3.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Tab Switching Logic
+    function switchTab(tabId, btnElement) {
+      ['shelf', 'velocity', 'seasonal', 'spatial', 'fleet'].forEach(t => {
+        document.getElementById('view-' + t).classList.add('hidden');
+        
+        const tab = document.getElementById('tab-' + t);
+        if(tab) {
+           tab.classList.remove('active-tab');
+        }
+      });
+      
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      btnElement.classList.add('active-tab');
+
+      if (tabId === 'velocity' && !window.depletionChartInitialized) initDepletionChart();
+      if (tabId === 'seasonal' && !window.forecastChartInitialized) initForecastChart();
+    }
+
+    // Resolve Alert Functionality
+    function resolveAlert(id, sku) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.opacity = '0.5';
+        el.style.pointerEvents = 'none';
+        el.innerHTML = `<div class="flex items-center gap-2 justify-center w-full py-2.5"><span class="h-6 w-6 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">✓</span> <span class="text-sm text-cyan-800 font-bold uppercase tracking-wide">Task Completed</span></div>`;
+        setTimeout(() => el.style.display = 'none', 1500);
+      }
+      const emptyStat = document.getElementById('empty-stat');
+      let curr = parseInt(emptyStat.innerText);
+      if (curr > 0) emptyStat.innerText = curr - 1;
+    }
+
+    // Trigger Smart Audit Simulation
+    function runSmartAudit() {
+      const load = document.getElementById('ai-load');
+      load.innerText = '95% (Scanning...)';
+      load.classList.add('text-blue-700');
+      setTimeout(() => {
+        load.innerText = '42%';
+        load.classList.remove('text-blue-700');
+        alert('Realogram Audit Completed:\n- Found deviation: Maggi Oats in Yippee slot.\n- Confirmed 2 out-of-stock gaps.\n- 100% Privacy Maintained.');
+      }, 1500);
+    }
+
+    // Velocity Depletion Chart (Blue & Cyan Theme)
+    function initDepletionChart() {
+      window.depletionChartInitialized = true;
+      const ctx = document.getElementById('depletionChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+          datasets: [
+            {
+              label: 'Camera Shelf Tracking',
+              data: [12, 18, 25, 32, 28, 45, 52, 68],
+              borderColor: '#3b82f6', 
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              borderWidth: 4,
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: '#3b82f6',
+              pointBorderColor: '#fff',
+              pointRadius: 5,
+              pointBorderWidth: 2
+            },
+            {
+              label: 'Checkout Register Scans',
+              data: [10, 19, 22, 30, 29, 41, 50, 64],
+              borderColor: '#22d3ee', 
+              borderDash: [8, 6],
+              borderWidth: 3,
+              tension: 0.4,
+              fill: false,
+              pointBackgroundColor: '#22d3ee',
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#334155', font: { size: 13, weight: 'bold' } } } },
+          scales: {
+            x: { ticks: { color: '#475569', font: { weight: 'bold' } }, grid: { color: 'rgba(255,255,255,0.3)' } },
+            y: { ticks: { color: '#475569', font: { weight: 'bold' } }, grid: { color: 'rgba(255,255,255,0.3)' }, title: { display: true, text: 'Items Sold', color: '#334155', font: {weight: 'bold'} } }
+          }
+        }
+      });
+    }
+
+    // Festival Forecasting Chart (Blue Theme)
+    let forecastChartInstance = null;
+    function initForecastChart() {
+      window.forecastChartInitialized = true;
+      const ctx = document.getElementById('forecastChart').getContext('2d');
+      forecastChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Cooking Oils', 'Sweets', 'Flours', 'Snacks', 'Dry Fruits', 'Spices'],
+          datasets: [
+            {
+              label: 'Normal Week Sales',
+              data: [120, 45, 210, 180, 30, 90],
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
+              borderColor: 'rgba(59, 130, 246, 0.6)',
+              borderWidth: 2,
+              borderRadius: 8
+            },
+            {
+              label: 'Predicted Sales',
+              data: [125, 48, 215, 185, 32, 92],
+              backgroundColor: '#3b82f6',
+              borderRadius: 8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#334155', font: { size: 13, weight: 'bold' } } } },
+          scales: {
+            x: { ticks: { color: '#475569', font: { weight: 'bold' } }, grid: { display: false } },
+            y: { ticks: { color: '#475569', font: { weight: 'bold' } }, grid: { color: 'rgba(255,255,255,0.3)' } }
+          }
+        }
+      });
+    }
+
+    // Festival Toggle
+    function setFestival(type) {
+      const regBtn = document.getElementById('btn-reg');
+      const diwaliBtn = document.getElementById('btn-diwali');
+      if (!forecastChartInstance) return;
+
+      if (type === 'regular') {
+        regBtn.classList.add('active-tab');
+        diwaliBtn.classList.remove('active-tab');
+        forecastChartInstance.data.datasets[1].data = [125, 48, 215, 185, 32, 92];
+      } else {
+        diwaliBtn.classList.add('active-tab');
+        regBtn.classList.remove('active-tab');
+        forecastChartInstance.data.datasets[1].data = [384, 180, 290, 250, 140, 150];
+      }
+      forecastChartInstance.update();
+    }
+  </script>
+</body>
+</html>
